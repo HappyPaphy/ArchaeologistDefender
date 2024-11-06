@@ -2,17 +2,10 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerEntity : CharacterEntity
+public class TowerEntity : CharacterEntity
 {
-    protected override void Start()
-    {
-        base.Start();
-    }
-
-    protected override void Update()
-    {
-        base.Update();
-    }
+    public enum TowerType { Null };
+    public TowerType towertType;
 
     public virtual void TakeDamage(float damageValue)
     {

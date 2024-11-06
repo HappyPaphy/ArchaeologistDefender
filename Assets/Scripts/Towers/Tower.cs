@@ -1,35 +1,29 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.U2D.Aseprite;
 using UnityEngine;
-using UnityEngine.Playables;
 
-public class Artifact : CharacterEntity
+public class Tower : TowerEntity
 {
-    public enum ArtifactState { Idle, Destroyed};
-    [SerializeField] private ArtifactState currentState;
+    public enum TowerState { Idle, Attack ,Destroyed };
+    [SerializeField] private TowerState currentState;
 
     [Header("Components")]
     [SerializeField] private SpriteRenderer sprite;
     [SerializeField] private Animator anim;
     [SerializeField] private Rigidbody2D rb;
 
-    [Header("Variables")]
-    [SerializeField] private bool isBeingMove;
-    [SerializeField] private bool isOutOfBound;
-
-    public static Artifact instance;
+    [Header("Varaibles")]
+    [SerializeField] private float enemyDetectRange;
+    [SerializeField] private float playerDetectRange;
+    [SerializeField] private float nextRangeAttack = 0.0f;
+    [SerializeField] private float attackCooldownDuration;
+    [SerializeField] private bool isDetectTarget = false;
 
     protected override void Awake()
     {
-        if (instance == null)
-        {
-            instance = this;
-        }
-        else
-        {
-            Destroy(this);
-        }
+        sprite = GetComponent<SpriteRenderer>();
+        anim = GetComponent<Animator>();
+        rb = GetComponent<Rigidbody2D>();
 
         base.Awake();
     }
@@ -42,33 +36,33 @@ public class Artifact : CharacterEntity
     protected override void Update()
     {
         ChooseAnimation();
-        Checkhealth();
         base.Update();
     }
 
-    private void Checkhealth()
+    private void RangeAttack()
     {
-        if (CharacterHealthComponent.CurrentHP <= 0)
-        {
-            currentState = ArtifactState.Destroyed;
-            // Game Over;
-        }
 
-        if (CharacterHealthComponent.CurrentHP > CharacterHealthComponent.MaxHP)
-        {
-            CharacterHealthComponent.SetHP(CharacterHealthComponent.MaxHP);
-        }
     }
 
-    public virtual void TakeDamage(float damageValue)
+    private void TowerUpgrade()
+    {
+
+    }
+
+    private void Facing()
+    {
+
+    }
+
+    public override void TakeDamage(float damageValue)
     {
         StartCoroutine(Tremble());
-        CharacterHealthComponent.TakeDamage(damageValue);
+        base.TakeDamage(damageValue);
     }
 
     protected override void Die()
     {
-
+        
         /*if (GameData.Instance != null)
         {
             for (int i = 0; i < orbsToSpawn; i++)
@@ -84,14 +78,18 @@ public class Artifact : CharacterEntity
     private void ChooseAnimation()
     {
         anim.SetBool("IsIdle", false);
+        anim.SetBool("IsAttack", false);
         anim.SetBool("IsDestroy", false);
 
         switch (currentState)
         {
-            case ArtifactState.Idle:
+            case TowerState.Idle:
                 anim.SetBool("IsIdle", true);
                 break;
-            case ArtifactState.Destroyed:
+            case TowerState.Attack:
+                anim.SetBool("IsAttack", true);
+                break;
+            case TowerState.Destroyed:
                 anim.SetBool("IsDestroy", true);
                 break;
         }
