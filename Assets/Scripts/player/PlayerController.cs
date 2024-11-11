@@ -12,6 +12,7 @@ public class PlayerController : PlayerEntity
 
     [Header("Components")]
     [SerializeField] private SpriteRenderer sprite;
+    [SerializeField] private CapsuleCollider2D col;
     [SerializeField] private Rigidbody2D rb;
 
     [Header("Variable")]
@@ -19,6 +20,14 @@ public class PlayerController : PlayerEntity
     [SerializeField] private float normalMoveSpeed;
     [SerializeField] private float runMoveSpeed;
     [SerializeField] private float dashSpeed;
+
+    public int coinCount = 0;
+    public int spiritOrbCount = 0;
+
+    private Vector2 movement;
+    private bool isSprintToggleOn = false;
+    private bool isCrafting = false;
+    private Vector2 mousePos;
 
     protected override void Awake()
     {
@@ -44,17 +53,63 @@ public class PlayerController : PlayerEntity
 
     protected override void Update()
     {
+        mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+
+        CreateTower();
+        Movement();
+        Running();
         base.Update();
     }
 
     private void Movement()
     {
+        movement.x = Input.GetAxisRaw("Horizontal");
+        movement.y = Input.GetAxisRaw("Vertical");
 
+        rb.MovePosition(rb.position + movement * currentMoveSpeed * Time.deltaTime);
+    }
+
+    private void Running()
+    {
+        if (Input.GetKeyDown(KeyCode.LeftShift))
+        {
+            isSprintToggleOn = true;
+        }
+        else if (Input.GetKeyUp(KeyCode.LeftShift))
+        {
+            isSprintToggleOn = false;
+        }
+
+        if (isSprintToggleOn && (movement != Vector2.zero))
+        {
+            currentState = PlayerState.Run;
+            currentMoveSpeed = runMoveSpeed;
+        }
+        else if (!isSprintToggleOn && (movement != Vector2.zero) && !isCrafting)
+        {
+            currentState = PlayerState.Idle;
+            currentMoveSpeed = normalMoveSpeed;
+        }
     }
 
     private void CreateTower()
     {
-
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            TowerPlacer.instance.CreateTower(0);
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            TowerPlacer.instance.CreateTower(1);
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            TowerPlacer.instance.CreateTower(2);
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha4))
+        {
+            TowerPlacer.instance.CreateTower(3);
+        }
     }
 
     private void CheckHealth()

@@ -7,30 +7,36 @@ public class TowerPlacer : MonoBehaviour
     [SerializeField] private GameObject[] transparentTowers;
     [SerializeField] private SpriteRenderer spriteTower_Create;
     [SerializeField] private GameObject player;
-    [SerializeField] private Sprite[] towerSprites;
 
-    void Start()
+    public static TowerPlacer instance;
+
+    void Awake()
     {
-        
+        if (instance == null)
+        {
+            instance = this;
+        }
+        else
+        {
+            Destroy(this);
+        }
     }
 
     void Update()
     {
-        
-    }
-
-    private void UpdatePlayerPosition()
-    {
 
     }
 
-    private void UpdateMousePosition()
+    private Vector3 UpdateMousePosition()
     {
-
+        return Camera.main.ScreenToWorldPoint(Input.mousePosition);
     }
 
-    private void CreateTower()
+    public void CreateTower(int towerIndex)
     {
-
+        GameObject tower = Instantiate(transparentTowers[towerIndex]);
+        tower.GetComponent<Tower>().currentState = Tower.TowerState.Creating;
+        //tower.GetComponent<SpriteRenderer>().sprite = towerSprites[towerIndex];
+        tower.transform.position = UpdateMousePosition();
     }
 }

@@ -11,6 +11,10 @@ public class SoundManager : MonoBehaviour
     [SerializeField] private AudioSource[] playerSounds;
     [SerializeField] private AudioSource[] BGMSounds;
 
+    [SerializeField] private AudioSource[] towerASounds;
+    [SerializeField] private AudioSource[] towerBSounds;
+    [SerializeField] private AudioSource[] towerCSounds;
+
     private void Awake()
     {
         if (instance == null)
@@ -34,5 +38,10 @@ public class SoundManager : MonoBehaviour
     public void PlayEnemySoldierSounds(int index, Vector3 soundPosition, float maxDistance = 30f)
     {
         PlaySound(enemySoldierSounds[index], soundPosition, maxDistance);
+    }
+
+    public void PlayTowerASounds(int index, Vector3 soundPosition, float maxDistance = 30f)
+    {
+        PlaySound(towerASounds[index], soundPosition, maxDistance);
     }
 }

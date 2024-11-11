@@ -4,8 +4,16 @@ using UnityEngine;
 
 public class TowerEntity : CharacterEntity
 {
-    public enum TowerType { Null };
-    public TowerType towertType;
+    public enum TowerType { Null, A, B, C };
+    public TowerType towerType;
+
+    [SerializeField] protected List<Sprite> towerBaseASprite;
+    [SerializeField] protected List<Sprite> towerBaseBSprite;
+    [SerializeField] protected List<Sprite> towerBaseCSprite;
+
+    [SerializeField] protected List<Sprite> towerWeaponASprite;
+    [SerializeField] protected List<Sprite> towerWeaponBSprite;
+    [SerializeField] protected List<Sprite> towerWeaponCSprite;
 
     public virtual void TakeDamage(float damageValue)
     {
