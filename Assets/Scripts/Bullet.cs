@@ -21,6 +21,10 @@ public class Bullet : MonoBehaviour
         {
             transform.position = Vector2.MoveTowards(transform.position, target.transform.position, moveSpeed);
         }
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
     protected virtual void OnTriggerEnter2D(Collider2D other)

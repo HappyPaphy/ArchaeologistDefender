@@ -484,7 +484,6 @@ MonoBehaviour:
     _maxHP: 10
     _currentHP: 10
     _isInvulnerable: 0
-  _moveSpeed: 10
   towerType: 1
   towerBaseASprite:
   - {fileID: -113019442, guid: a69f0d35ad1101947b917bcbb0b4e49e, type: 3}
@@ -511,7 +510,6 @@ MonoBehaviour:
   player: {fileID: 0}
   targetedEnemy: {fileID: 0}
   bulletPrefab: {fileID: 7109228286264058712, guid: 92de218896faf474dae633644b5237d4, type: 3}
-  targets: []
   upgradeTowerCanvas: {fileID: 253084829045010820}
   firePoint: {fileID: 6560158392782477521}
   towerWeaponTransforms:
@@ -520,7 +518,7 @@ MonoBehaviour:
   - {fileID: 4605829686694561251}
   text_UpgradeTowerBaseCost: {fileID: 4441593090970785489}
   text_UpgradeTowerWeaponCost: {fileID: 1861488327970415235}
-  enemyDetectRange: 4
+  enemyDetectRange: 7
   playerDetectRange: 10.7
   nextRangeAttack: 0
   attackCooldownDuration: 2

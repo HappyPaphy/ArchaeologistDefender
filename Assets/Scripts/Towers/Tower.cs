@@ -25,7 +25,7 @@ public class Tower : TowerEntity
     [SerializeField] private GameObject player;
     [SerializeField] private GameObject targetedEnemy;
     [SerializeField] private GameObject bulletPrefab;
-    [SerializeField] private List<GameObject> targets;
+    //[SerializeField] private List<GameObject> targets;
     [SerializeField] private GameObject upgradeTowerCanvas;
 
     [SerializeField] private Transform firePoint;
@@ -130,9 +130,9 @@ public class Tower : TowerEntity
 
                 DetectEnemy();
 
-                if (targets.Count > 0)
+                /*if (targets.Count > 0)
                 {
-                    /*GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
+                    *//*GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
                     foreach (var enemy in enemies)
                     {
                         if (Vector3.Distance(enemy.transform.position, gameObject.transform.position) <= enemyDetectRange)
@@ -140,8 +140,8 @@ public class Tower : TowerEntity
                             targetedEnemy = enemy;
                             currentState = TowerState.Attack;
                         }
-                    }*/
-                }
+                    }*//*
+                }*/
                 break;
 
             case TowerState.Attack:
@@ -159,6 +159,10 @@ public class Tower : TowerEntity
                     {
                         RangeAttack();
                     }
+                }
+                else
+                {
+                    currentState = TowerState.Idle;
                 }
                 break;
 

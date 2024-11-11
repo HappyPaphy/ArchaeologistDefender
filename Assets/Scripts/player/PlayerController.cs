@@ -25,9 +25,9 @@ public class PlayerController : PlayerEntity
     public int spiritOrbCount = 0;
 
     private Vector2 movement;
+    private Vector2 mousePos;
     private bool isSprintToggleOn = false;
     private bool isCrafting = false;
-    private Vector2 mousePos;
 
     protected override void Awake()
     {
@@ -134,7 +134,6 @@ public class PlayerController : PlayerEntity
 
     protected override void Die()
     {
-
         /*if (GameData.Instance != null)
         {
             for (int i = 0; i < orbsToSpawn; i++)

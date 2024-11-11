@@ -7,9 +7,6 @@ public class CharacterEntity : MonoBehaviour
 {
     public HealthComponent CharacterHealthComponent;
 
-    public float MoveSpeed { get; private set; }
-    [SerializeField] private float _moveSpeed = 10f;
-
     protected virtual void Awake()
     {
         CharacterHealthComponent.SetHP(CharacterHealthComponent.MaxHP);
@@ -22,7 +19,6 @@ public class CharacterEntity : MonoBehaviour
 
     protected virtual void Update()
     {
-        MoveSpeed = _moveSpeed;
         UpdateEntity();
     }
 
