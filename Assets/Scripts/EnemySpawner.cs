@@ -14,7 +14,7 @@ public class EnemySpawnList
 
 public class EnemySpawner : MonoBehaviour
 {
-    [SerializeField] private Transform[] enemySpawn;
+    [SerializeField] private Transform[] enemySpawns;
     [SerializeField] private GameObject[] enemyPrefabs;
 
     public enum WaveState { Wave_1, Wave_2, Wave_3, Wave_4, Wave_5 };
@@ -102,7 +102,7 @@ public class EnemySpawner : MonoBehaviour
     {
         yield return new WaitForSeconds(spawnCooldown);
         GameObject enemy = Instantiate(enemyPrefabs[enemyIndex]);
-        enemy.transform.position = enemySpawn[spawnIndex].position;
+        enemy.transform.position = enemySpawns[spawnIndex].position;
         isSpawning = false;
     }
 }

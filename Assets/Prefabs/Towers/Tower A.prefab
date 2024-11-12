@@ -95,7 +95,7 @@ Animator:
   m_GameObject: {fileID: 71696507809765298}
   m_Enabled: 1
   m_Avatar: {fileID: 0}
-  m_Controller: {fileID: 0}
+  m_Controller: {fileID: 9100000, guid: 8909c3f25fa934d459d48cda754f9af8, type: 2}
   m_CullingMode: 0
   m_UpdateMode: 0
   m_ApplyRootMotion: 0
@@ -507,6 +507,10 @@ MonoBehaviour:
   enemyLayer:
     serializedVersion: 2
     m_Bits: 128
+  animatorControllers:
+  - {fileID: 9100000, guid: 10ed3a12300fea14991c4bdc61a9c885, type: 2}
+  - {fileID: 9100000, guid: de04fcfa332d8c44894c5d7f17c68670, type: 2}
+  - {fileID: 9100000, guid: 8909c3f25fa934d459d48cda754f9af8, type: 2}
   player: {fileID: 0}
   targetedEnemy: {fileID: 0}
   bulletPrefab: {fileID: 7109228286264058712, guid: 92de218896faf474dae633644b5237d4, type: 3}
@@ -521,12 +525,13 @@ MonoBehaviour:
   enemyDetectRange: 7
   playerDetectRange: 10.7
   nextRangeAttack: 0
-  attackCooldownDuration: 2
+  attackCooldownDuration: 1.1
   isDetectTarget: 0
   mouseDistance: 0
   mouseTransform: {fileID: 0}
   towerBaseUpgradeCosts: 000000000000000000000000
   towerWeaponUpgradeCosts: 000000000000000000000000
+  isCollapseWithObstacle: 0
 --- !u!61 &8719059269950146856
 BoxCollider2D:
   m_ObjectHideFlags: 0

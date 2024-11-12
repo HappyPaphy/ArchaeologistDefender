@@ -21,6 +21,8 @@ public class Tower : TowerEntity
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private LayerMask enemyLayer;
 
+    [SerializeField] private RuntimeAnimatorController[] animatorControllers;
+
     [Header("GameObject")]
     [SerializeField] private GameObject player;
     [SerializeField] private GameObject targetedEnemy;
@@ -46,6 +48,8 @@ public class Tower : TowerEntity
 
     [SerializeField] private int[] towerBaseUpgradeCosts;
     [SerializeField] private int[] towerWeaponUpgradeCosts;
+
+    [SerializeField] private bool isCollapseWithObstacle = false;
 
     protected override void Awake()
     {
@@ -106,7 +110,7 @@ public class Tower : TowerEntity
                 transform.position = mouseTransform.transform.position;
                 mouseDistance = Vector3.Distance(player.transform.position, gameObject.transform.position);
 
-                if (Vector3.Distance(player.transform.position, gameObject.transform.position) < playerDetectRange)
+                if (Vector3.Distance(player.transform.position, gameObject.transform.position) < playerDetectRange && !isCollapseWithObstacle)
                 {
                     spriteRndr_TowerBase.color = new Color32(255, 255, 255, 60);
                     spriteRndr_TowerWeapon.color = new Color32(255, 255, 255, 60);
@@ -234,14 +238,17 @@ public class Tower : TowerEntity
         {
             case TowerWeaponLevel.Level_1:
                 spriteRndr_TowerWeapon.sprite = towerWeaponASprite[0];
+                anim_TowerWeapon.GetComponent<Animator>().runtimeAnimatorController = animatorControllers[0];
                 break;
 
             case TowerWeaponLevel.Level_2:
                 spriteRndr_TowerWeapon.sprite = towerWeaponASprite[1];
+                anim_TowerWeapon.GetComponent<Animator>().runtimeAnimatorController = animatorControllers[1];
                 break;
 
             case TowerWeaponLevel.Level_3:
                 spriteRndr_TowerWeapon.sprite = towerWeaponASprite[2];
+                anim_TowerWeapon.GetComponent<Animator>().runtimeAnimatorController = animatorControllers[2];
                 break;
         }
     }
@@ -356,9 +363,17 @@ public class Tower : TowerEntity
 
     private void OnTriggerEnter2D(Collider2D other)
     {
-        if (other.gameObject.CompareTag("Enemy"))
+        if(other.gameObject.layer == LayerMask.NameToLayer("Obstacle"))
         {
-            
+            isCollapseWithObstacle = true;
+        }
+    }
+
+    private void OnTriggerExit2D(Collider2D other)
+    {
+        if (other.gameObject.layer == LayerMask.NameToLayer("Obstacle"))
+        {
+            isCollapseWithObstacle = false;
         }
     }
 
