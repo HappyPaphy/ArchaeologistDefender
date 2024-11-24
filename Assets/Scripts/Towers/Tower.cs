@@ -27,7 +27,6 @@ public class Tower : TowerEntity
     [SerializeField] private GameObject player;
     [SerializeField] private GameObject targetedEnemy;
     [SerializeField] private GameObject bulletPrefab;
-    //[SerializeField] private List<GameObject> targets;
     [SerializeField] private GameObject upgradeTowerCanvas;
 
     [SerializeField] private Transform firePoint;
@@ -39,8 +38,9 @@ public class Tower : TowerEntity
     [Header("Varaibles")]
     [SerializeField] private float enemyDetectRange;
     [SerializeField] private float playerDetectRange;
+    [SerializeField] private float playerUpgradeRange;
     [SerializeField] private float nextRangeAttack = 0.0f;
-    [SerializeField] private float attackCooldownDuration;
+    [SerializeField] private float[] attackCooldownDurations;
     [SerializeField] private bool isDetectTarget = false;
 
     [SerializeField] private float mouseDistance = 0f;
@@ -51,6 +51,9 @@ public class Tower : TowerEntity
 
     [SerializeField] private bool isCollapseWithObstacle = false;
 
+    [SerializeField] private float[] maxHP;
+    [SerializeField] private float[] damage;
+
     protected override void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -60,7 +63,7 @@ public class Tower : TowerEntity
 
     protected override void Start()
     {
-        currentState = TowerState.Creating;
+        //currentState = TowerState.Creating;
 
         towerWeaponLevel = TowerWeaponLevel.Level_1;
         text_UpgradeTowerWeaponCost.text = $"{towerWeaponUpgradeCosts[0]}";
@@ -83,7 +86,7 @@ public class Tower : TowerEntity
 
     private void DetectPlayer()
     {
-        if(Vector2.Distance(transform.position, player.transform.position) < playerDetectRange && currentState != TowerState.Creating)
+        if(Vector2.Distance(transform.position, player.transform.position) < playerUpgradeRange && currentState != TowerState.Creating)
         {
             upgradeTowerCanvas.SetActive(true);
         }
@@ -106,10 +109,14 @@ public class Tower : TowerEntity
             case TowerState.Creating:
 
                 mouseTransform = GameObject.FindGameObjectWithTag("MouseTransform");
-                mouseTransform.transform.position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
-                transform.position = mouseTransform.transform.position;
-                mouseDistance = Vector3.Distance(player.transform.position, gameObject.transform.position);
 
+                if(mouseTransform != null)
+                {
+                    mouseTransform.transform.position = Camera.main.ScreenToWorldPoint(Input.mousePosition);
+                    transform.position = mouseTransform.transform.position;
+                    mouseDistance = Vector3.Distance(player.transform.position, gameObject.transform.position);
+                }
+                
                 if (Vector3.Distance(player.transform.position, gameObject.transform.position) < playerDetectRange && !isCollapseWithObstacle)
                 {
                     spriteRndr_TowerBase.color = new Color32(255, 255, 255, 60);
@@ -118,6 +125,7 @@ public class Tower : TowerEntity
                     if (Input.GetKeyDown(KeyCode.F))
                     {
                         currentState = TowerState.Idle;
+                        PlayerController.instance.isCrafting = false;
                     }
                 }
                 else
@@ -125,27 +133,16 @@ public class Tower : TowerEntity
                     spriteRndr_TowerBase.color = new Color32(255, 0, 0, 60);
                     spriteRndr_TowerWeapon.color = new Color32(255, 0, 0, 60);
                 }
-                
 
-                
+                if(Input.GetKeyDown(KeyCode.Escape))
+                {
+                    PlayerController.instance.isCrafting = false;
+                    Destroy(gameObject);
+                }
                 break;
 
             case TowerState.Idle:
-
                 DetectEnemy();
-
-                /*if (targets.Count > 0)
-                {
-                    *//*GameObject[] enemies = GameObject.FindGameObjectsWithTag("Enemy");
-                    foreach (var enemy in enemies)
-                    {
-                        if (Vector3.Distance(enemy.transform.position, gameObject.transform.position) <= enemyDetectRange)
-                        {
-                            targetedEnemy = enemy;
-                            currentState = TowerState.Attack;
-                        }
-                    }*//*
-                }*/
                 break;
 
             case TowerState.Attack:
@@ -187,6 +184,7 @@ public class Tower : TowerEntity
                 case TowerWeaponLevel.Level_1:
                     if(PlayerController.instance.coinCount >= towerWeaponUpgradeCosts[0])
                     {
+                        PlayerController.instance.coinCount -= towerWeaponUpgradeCosts[0];
                         towerWeaponLevel = TowerWeaponLevel.Level_2;
                         text_UpgradeTowerWeaponCost.text = $"{towerWeaponUpgradeCosts[1]}";
                         TowerWeaponSprite();
@@ -196,6 +194,7 @@ public class Tower : TowerEntity
                 case TowerWeaponLevel.Level_2:
                     if (PlayerController.instance.coinCount >= towerWeaponUpgradeCosts[1])
                     {
+                        PlayerController.instance.coinCount -= towerWeaponUpgradeCosts[1];
                         towerWeaponLevel = TowerWeaponLevel.Level_3;
                         text_UpgradeTowerWeaponCost.text = $"MAX";
                         TowerWeaponSprite();
@@ -214,6 +213,10 @@ public class Tower : TowerEntity
                 case TowerBaseLevel.Level_1:
                     if(PlayerController.instance.coinCount >= towerBaseUpgradeCosts[0])
                     {
+                        CharacterHealthComponent.SetMaxHP(maxHP[(int)towerBaseLevel]);
+                        CharacterHealthComponent.SetHP(CharacterHealthComponent.MaxHP);
+
+                        PlayerController.instance.coinCount -= towerBaseUpgradeCosts[0];
                         towerBaseLevel = TowerBaseLevel.Level_2;
                         text_UpgradeTowerBaseCost.text = $"{towerBaseUpgradeCosts[1]}";
                         TowerBaseSprite();
@@ -223,6 +226,10 @@ public class Tower : TowerEntity
                 case TowerBaseLevel.Level_2:
                     if (PlayerController.instance.coinCount >= towerBaseUpgradeCosts[1])
                     {
+                        CharacterHealthComponent.SetMaxHP(maxHP[(int)towerBaseLevel]);
+                        CharacterHealthComponent.SetHP(CharacterHealthComponent.MaxHP);
+
+                        PlayerController.instance.coinCount -= towerBaseUpgradeCosts[1];
                         towerBaseLevel = TowerBaseLevel.Level_3;
                         text_UpgradeTowerBaseCost.text = $"MAX";
                         TowerBaseSprite();
@@ -234,7 +241,21 @@ public class Tower : TowerEntity
 
     private void TowerWeaponSprite()
     {
-        switch (towerWeaponLevel)
+        switch (towerType)
+        {
+            case TowerType.A:
+                spriteRndr_TowerWeapon.sprite = towerWeaponASprite[(int)towerWeaponLevel];
+                break;
+
+            case TowerType.B:
+                spriteRndr_TowerWeapon.sprite = towerWeaponBSprite[(int)towerWeaponLevel];
+                break;
+        }
+
+        
+        anim_TowerWeapon.GetComponent<Animator>().runtimeAnimatorController = animatorControllers[(int)towerWeaponLevel];
+
+        /*switch (towerWeaponLevel)
         {
             case TowerWeaponLevel.Level_1:
                 spriteRndr_TowerWeapon.sprite = towerWeaponASprite[0];
@@ -250,12 +271,25 @@ public class Tower : TowerEntity
                 spriteRndr_TowerWeapon.sprite = towerWeaponASprite[2];
                 anim_TowerWeapon.GetComponent<Animator>().runtimeAnimatorController = animatorControllers[2];
                 break;
-        }
+        }*/
     }
 
     private void TowerBaseSprite()
     {
-        switch (towerBaseLevel)
+        firePoint.position = towerWeaponTransforms[(int)towerBaseLevel].position;
+
+        switch(towerType)
+        {
+            case TowerType.A:
+                spriteRndr_TowerBase.sprite = towerBaseASprite[(int)towerBaseLevel];
+                break;
+
+            case TowerType.B:
+                spriteRndr_TowerBase.sprite = towerBaseBSprite[(int)towerBaseLevel];
+                break;
+        }
+
+        /*switch (towerBaseLevel)
         {
             case TowerBaseLevel.Level_1:
                 firePoint.position = towerWeaponTransforms[0].position;
@@ -271,7 +305,7 @@ public class Tower : TowerEntity
                 firePoint.position = towerWeaponTransforms[2].position;
                 spriteRndr_TowerBase.sprite = towerBaseASprite[2];
                 break;
-        }
+        }*/
 
         spriteRndr_TowerWeapon.gameObject.transform.position = firePoint.position;
     }
@@ -307,10 +341,11 @@ public class Tower : TowerEntity
     {
         if (Time.time > nextRangeAttack && targetedEnemy != null)
         {
-            nextRangeAttack = Time.time + attackCooldownDuration;
+            nextRangeAttack = Time.time + attackCooldownDurations[((int)towerWeaponLevel)];
 
             GameObject bullet = Instantiate(bulletPrefab);
             bullet.transform.position = firePoint.position;
+            bullet.GetComponent<Bullet>().damage = damage[(int)towerWeaponLevel];
             SoundManager.instance.PlayTowerASounds(0, transform.position);
 
             switch(towerType)
@@ -320,7 +355,7 @@ public class Tower : TowerEntity
                     break;
 
                 case TowerType.B:
-                    //bullet.GetComponent<Bullet_TowerA>().target = targetedEnemy;
+                    bullet.GetComponent<Bullet_TowerB>().target = targetedEnemy;
                     break;
 
                 case TowerType.C:

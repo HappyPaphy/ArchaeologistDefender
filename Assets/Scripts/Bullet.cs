@@ -6,7 +6,7 @@ public class Bullet : MonoBehaviour
 {
     [SerializeField] public GameObject target;
     [SerializeField] protected float moveSpeed;
-    [SerializeField] protected float damage;
+    [SerializeField] public float damage;
     [SerializeField] protected LayerMask targetLayerMask;
     [SerializeField] protected Rigidbody2D rb;
 
@@ -80,7 +80,7 @@ public class Bullet : MonoBehaviour
                 var enemyMonster = other.gameObject.GetComponent<EnemyMonster>();
                 if (enemyMonster != null)
                 {
-                    //enemyMonster.TakeDamage(damage);
+                    enemyMonster.TakeDamage(damage);
                 }
             }
             else if (other.gameObject.CompareTag("Tower"))

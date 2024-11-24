@@ -2,10 +2,14 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class CharacterEntity : MonoBehaviour
 {
     public HealthComponent CharacterHealthComponent;
+
+    [Header("Component")]
+    [SerializeField] protected Slider slider;
 
     protected virtual void Awake()
     {
@@ -14,11 +18,14 @@ public class CharacterEntity : MonoBehaviour
 
     protected virtual void Start()
     {
-
+        slider.minValue = 0;
     }
 
     protected virtual void Update()
     {
+        slider.maxValue = CharacterHealthComponent.MaxHP;
+        slider.value = CharacterHealthComponent.CurrentHP;
+
         UpdateEntity();
     }
 
@@ -71,7 +78,7 @@ public class HealthComponent
 
     }
 
-    public void SetMaxHP(int value)
+    public void SetMaxHP(float value)
     {
         _maxHP = value;
     }

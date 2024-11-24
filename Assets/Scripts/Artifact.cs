@@ -1,8 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
-using UnityEditor.U2D.Aseprite;
 using UnityEngine;
-using UnityEngine.Playables;
 
 public class Artifact : CharacterEntity
 {
@@ -17,6 +15,9 @@ public class Artifact : CharacterEntity
     [Header("Variables")]
     [SerializeField] private bool isBeingMove;
     [SerializeField] private bool isOutOfBound;
+
+    [SerializeField] private float playerRange;
+    [SerializeField] private Vector3 spawnPosition; 
 
     public static Artifact instance;
 
@@ -36,11 +37,29 @@ public class Artifact : CharacterEntity
 
     protected override void Start()
     {
-        
+        spawnPosition = gameObject.transform.position;
     }
 
     protected override void Update()
     {
+        float distanceToPlayer = Vector2.Distance(transform.position, PlayerController.instance.transform.position);
+        float distanceToSpawn = Vector2.Distance(transform.position, PlayerController.instance.transform.position);
+
+        if (distanceToSpawn < 0.03f && !GameManager.instance.IsArtifactBeingStole())
+        {
+            transform.position = spawnPosition;
+        }
+        else if(distanceToSpawn >= 0.03f && !GameManager.instance.IsArtifactBeingStole())
+        {
+            if (distanceToPlayer < playerRange)
+            {
+                if (Input.GetKey(KeyCode.LeftControl))
+                {
+                    transform.position = PlayerController.instance.transform.position;
+                }
+            }
+        }
+
         ChooseAnimation();
         Checkhealth();
         base.Update();

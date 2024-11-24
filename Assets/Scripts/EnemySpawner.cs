@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.AI;
 
 [Serializable]
 public class EnemySpawnList
@@ -27,6 +28,7 @@ public class EnemySpawner : MonoBehaviour
     [SerializeField] private bool isSpawning = false;
     [SerializeField] private bool isWaveFinished = true;
 
+
     public static EnemySpawner instance;
 
     private void Awake()
@@ -46,14 +48,6 @@ public class EnemySpawner : MonoBehaviour
         StartCoroutine(EnemyWave());
     }
 
-    private void Update()
-    {
-        /*if (!isSpawning && isWaveFinished)
-        {
-            StartCoroutine(EnemyWave());
-        }*/
-    }
-
     private IEnumerator EnemyWave()
     {
         isSpawning = true;
@@ -63,15 +57,22 @@ public class EnemySpawner : MonoBehaviour
             case WaveState.Wave_1:
                 yield return StartCoroutine(HandleWave(enemySpawnLists[0], 2f));
                 currentWaveState = WaveState.Wave_2;
+                StartCoroutine(EnemyWave());
                 break;
 
             case WaveState.Wave_2:
                 yield return StartCoroutine(HandleWave(enemySpawnLists[1], 5f));
                 currentWaveState = WaveState.Wave_3;
+                StartCoroutine(EnemyWave());
                 break;
 
             case WaveState.Wave_3:
-                // Add more waves if needed
+                yield return StartCoroutine(HandleWave(enemySpawnLists[2], 5f));
+                currentWaveState = WaveState.Wave_4;
+                StartCoroutine(EnemyWave());
+                break;
+
+            case WaveState.Wave_4:
                 break;
         }
 
@@ -103,6 +104,21 @@ public class EnemySpawner : MonoBehaviour
         yield return new WaitForSeconds(spawnCooldown);
         GameObject enemy = Instantiate(enemyPrefabs[enemyIndex]);
         enemy.transform.position = enemySpawns[spawnIndex].position;
+
+        NavMeshAgent agent = enemy.GetComponent<NavMeshAgent>();
+        if (agent != null)
+        {
+            agent.Warp(enemySpawns[spawnIndex].position);
+        }
+
+        Debug.Log($"Spawning Enemy: {enemy.name} at Position Index {spawnIndex}, " +
+                  $"Spawn Point: {enemySpawns[spawnIndex].position}");
+
+        if (enemy.GetComponent<EnemySoldier>() != null)
+        {
+            enemy.GetComponent<EnemySoldier>().spawnTransform = enemySpawns[spawnIndex];
+        }
+
         isSpawning = false;
     }
 }

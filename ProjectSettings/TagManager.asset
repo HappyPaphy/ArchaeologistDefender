@@ -8,6 +8,7 @@ TagManager:
   - MouseTransform
   - Tower
   - EnemySoldier
+  - Artifact
   layers:
   - Default
   - TransparentFX

@@ -35,13 +35,28 @@ public class SoundManager : MonoBehaviour
         audioSource.Play();
     }
 
+    public void PlayPlayerSounds(int index, Vector3 soundPosition, float maxDistance = 30f)
+    {
+        PlaySound(playerSounds[index], soundPosition, maxDistance);
+    }
+
     public void PlayEnemySoldierSounds(int index, Vector3 soundPosition, float maxDistance = 30f)
     {
         PlaySound(enemySoldierSounds[index], soundPosition, maxDistance);
     }
 
+    public void PlayEnemyMonsterSounds(int index, Vector3 soundPosition, float maxDistance = 30f)
+    {
+        PlaySound(enemyMonsterSounds[index], soundPosition, maxDistance);
+    }
+
     public void PlayTowerASounds(int index, Vector3 soundPosition, float maxDistance = 30f)
     {
         PlaySound(towerASounds[index], soundPosition, maxDistance);
+    }
+
+    public void PlayTowerBSounds(int index, Vector3 soundPosition, float maxDistance = 30f)
+    {
+        PlaySound(towerBSounds[index], soundPosition, maxDistance);
     }
 }

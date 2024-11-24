@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerController : PlayerEntity
 {
@@ -10,10 +11,21 @@ public class PlayerController : PlayerEntity
     public enum PlayerState { Idle, Run, Crafting, Hurt, Died };
     public PlayerState currentState;
 
+
     [Header("Components")]
-    [SerializeField] private SpriteRenderer sprite;
+    [SerializeField] private SpriteRenderer spriteRndr;
     [SerializeField] private CapsuleCollider2D col;
     [SerializeField] private Rigidbody2D rb;
+    [SerializeField] private Slider sliderCoin;
+    [SerializeField] private Slider sliderSpiritOrb;
+
+    [Header("UI")]
+    [SerializeField] private Text coinText;
+    [SerializeField] private Text spiritOrbText;
+    [SerializeField] private Text[] towerBuildCostsText;
+
+    [Header("GameObject")]
+    [SerializeField] private GameObject bloodSplashEffect;
 
     [Header("Variable")]
     [SerializeField] private float currentMoveSpeed;
@@ -21,13 +33,24 @@ public class PlayerController : PlayerEntity
     [SerializeField] private float runMoveSpeed;
     [SerializeField] private float dashSpeed;
 
-    public int coinCount = 0;
-    public int spiritOrbCount = 0;
+    [SerializeField] private float nextSpiritOrbIncome;
+    [SerializeField] private float spiritIncomeCooldownDuration;
+    [SerializeField] private int coinIncomeAmount;
+    [SerializeField] private float nextCoinIncome;
+    [SerializeField] private float coinIncomeCooldownDuration;
+    [SerializeField] private int spiritOrbIncomeAmount;
+
+    public int coinCount = 100;
+    public int spiritOrbCount = 10;
+    public int spiritOrbCountCancel = 0;
+    private int currentCraftingTowerIndex = 0;
+    public bool isCrafting = false;
+
+    [SerializeField] private int[] towerBuildCosts;
 
     private Vector2 movement;
     private Vector2 mousePos;
     private bool isSprintToggleOn = false;
-    private bool isCrafting = false;
 
     protected override void Awake()
     {
@@ -40,7 +63,6 @@ public class PlayerController : PlayerEntity
             Destroy(this);
         }
 
-        sprite = GetComponent<SpriteRenderer>();
         rb = GetComponent<Rigidbody2D>();
 
         base.Awake();
@@ -48,6 +70,24 @@ public class PlayerController : PlayerEntity
 
     protected override void Start()
     {
+        if(towerBuildCostsText != null && towerBuildCosts != null)
+        {
+            for (int i = 0; i < towerBuildCostsText.Length; i++)
+            {
+                towerBuildCostsText[i].text = $"{towerBuildCosts[i]}";
+            }
+        }
+        
+        if(sliderCoin != null)
+        {
+            sliderCoin.maxValue = coinIncomeCooldownDuration;
+        }
+        
+        if(sliderSpiritOrb != null)
+        {
+            sliderSpiritOrb.maxValue = spiritIncomeCooldownDuration;
+        }
+        
         base.Start();
     }
 
@@ -55,9 +95,55 @@ public class PlayerController : PlayerEntity
     {
         mousePos = Camera.main.ScreenToWorldPoint(Input.mousePosition);
 
-        CreateTower();
-        Movement();
-        Running();
+        if(coinText != null)
+            coinText.text = $"{coinCount}";
+
+        if (spiritOrbText != null)
+            spiritOrbText.text = $"{spiritOrbCount}";
+
+
+        if(isCrafting)
+        {
+            if(Input.GetKeyDown(KeyCode.F))
+            {
+                isCrafting = false;
+                currentState = PlayerState.Idle;
+            }
+            else if(Input.GetKeyDown(KeyCode.Escape))
+            {
+                isCrafting = false;
+                spiritOrbCount += spiritOrbCountCancel;
+                towerBuildCosts[currentCraftingTowerIndex] -= 2;
+                towerBuildCostsText[currentCraftingTowerIndex].text = $"{towerBuildCosts[currentCraftingTowerIndex]}";
+                currentState = PlayerState.Idle;
+            }
+        }
+
+        if (!isCrafting)
+        {
+            CreateTower();
+            Movement();
+            Running();
+        }
+
+        if (sliderCoin != null)
+            sliderCoin.value = nextCoinIncome - Time.time;
+
+        if (sliderSpiritOrb != null)
+            sliderSpiritOrb.value = nextSpiritOrbIncome - Time.time;
+
+        if (Time.time > nextCoinIncome)
+        {
+            nextCoinIncome = Time.time + coinIncomeCooldownDuration;
+            coinCount += coinIncomeAmount;
+        }
+
+        if (Time.time > nextSpiritOrbIncome)
+        {
+            nextSpiritOrbIncome = Time.time + spiritIncomeCooldownDuration;
+            spiritOrbCount += spiritOrbIncomeAmount;
+        }
+
         base.Update();
     }
 
@@ -67,6 +153,15 @@ public class PlayerController : PlayerEntity
         movement.y = Input.GetAxisRaw("Vertical");
 
         rb.MovePosition(rb.position + movement * currentMoveSpeed * Time.deltaTime);
+
+        if(movement.x < 0)
+        {
+            spriteRndr.flipX = true;
+        }
+        else if (movement.x > 0)
+        {
+            spriteRndr.flipX = false;
+        }
     }
 
     private void Running()
@@ -80,12 +175,12 @@ public class PlayerController : PlayerEntity
             isSprintToggleOn = false;
         }
 
-        if (isSprintToggleOn && (movement != Vector2.zero))
+        if (/*isSprintToggleOn &&*/ (movement != Vector2.zero))
         {
             currentState = PlayerState.Run;
             currentMoveSpeed = runMoveSpeed;
         }
-        else if (!isSprintToggleOn && (movement != Vector2.zero) && !isCrafting)
+        else if (/*!isSprintToggleOn &&*/ (movement == Vector2.zero) && !isCrafting)
         {
             currentState = PlayerState.Idle;
             currentMoveSpeed = normalMoveSpeed;
@@ -94,21 +189,54 @@ public class PlayerController : PlayerEntity
 
     private void CreateTower()
     {
-        if (Input.GetKeyDown(KeyCode.Alpha1))
+        if (!isCrafting)
         {
-            TowerPlacer.instance.CreateTower(0);
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            TowerPlacer.instance.CreateTower(1);
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha3))
-        {
-            TowerPlacer.instance.CreateTower(2);
-        }
-        else if (Input.GetKeyDown(KeyCode.Alpha4))
-        {
-            TowerPlacer.instance.CreateTower(3);
+            if (Input.GetKeyDown(KeyCode.Alpha1) && spiritOrbCount >= towerBuildCosts[0])
+            {
+                currentCraftingTowerIndex = 0;
+                spiritOrbCountCancel = towerBuildCosts[0];
+                towerBuildCosts[0] += 2;
+                towerBuildCostsText[0].text = $"{towerBuildCosts[0]}";
+                spiritOrbCount -= spiritOrbCountCancel;
+
+                currentState = PlayerState.Crafting;
+                isCrafting = true;
+                TowerPlacer.instance.CreateTower(0);
+            }
+            else if (Input.GetKeyDown(KeyCode.Alpha2) && spiritOrbCount >= towerBuildCosts[1])
+            {
+                currentCraftingTowerIndex = 1;
+                spiritOrbCountCancel = towerBuildCosts[1];
+                towerBuildCosts[1] += 5;
+                towerBuildCostsText[1].text = $"{towerBuildCosts[1]}";
+                spiritOrbCount -= spiritOrbCountCancel;
+
+                currentState = PlayerState.Crafting;
+                isCrafting = true;
+                TowerPlacer.instance.CreateTower(1);
+            }
+            /*else if (Input.GetKeyDown(KeyCode.Alpha3) && spiritOrbCount >= towerBuildCosts[2])
+            {
+                spiritOrbCountCancel = towerBuildCosts[2];
+                towerBuildCosts[2] += 2;
+                towerBuildCostsText[2].text = $"{towerBuildCosts[2]}";
+                spiritOrbCount -= spiritOrbCountCancel;
+
+                currentState = PlayerState.Crafting;
+                isCrafting = true;
+                TowerPlacer.instance.CreateTower(2);
+            }
+            else if (Input.GetKeyDown(KeyCode.Alpha4) && spiritOrbCount >= towerBuildCosts[3])
+            {
+                spiritOrbCountCancel = towerBuildCosts[3];
+                towerBuildCosts[3] += 2;
+                towerBuildCostsText[3].text = $"{towerBuildCosts[3]}";
+                spiritOrbCount -= spiritOrbCountCancel;
+
+                currentState = PlayerState.Crafting;
+                isCrafting = true;
+                TowerPlacer.instance.CreateTower(3);
+            }*/
         }
     }
 
@@ -126,33 +254,29 @@ public class PlayerController : PlayerEntity
         }
     }
 
-    public virtual void TakeDamage(float damageValue)
+    public override void TakeDamage(float damageValue)
     {
         StartCoroutine(Tremble());
-        CharacterHealthComponent.TakeDamage(damageValue);
+        Instantiate(bloodSplashEffect, transform.position, Quaternion.Euler(0f, 0f, 0f));
+        //SoundManager.instance.
+        base.TakeDamage(damageValue);
     }
 
     protected override void Die()
     {
-        /*if (GameData.Instance != null)
-        {
-            for (int i = 0; i < orbsToSpawn; i++)
-            {
-                GameData.Instance.CreateOrbAtTransform(transform);
-            }
-        }
-        QuestManager.Instance.TrackKill(enemyType);*/
+        currentState = PlayerState.Died;
 
-        base.Die(); // Call the base Die method to handle other death-related behaviors
+        //base.Die();
     }
+
 
     private IEnumerator Tremble()
     {
         for (int i = 0; i < 10; i++)
         {
-            sprite.transform.localPosition += new Vector3(0.08f, 0, 0);
+            spriteRndr.transform.localPosition += new Vector3(0.08f, 0, 0);
             yield return new WaitForSeconds(0.01f);
-            sprite.transform.localPosition -= new Vector3(0.08f, 0, 0);
+            spriteRndr.transform.localPosition -= new Vector3(0.08f, 0, 0);
             yield return new WaitForSeconds(0.01f);
         }
     }

@@ -13,16 +13,22 @@ public class EnemySoldier : EnemyEntity
     [SerializeField] private Rigidbody2D rb;
     [SerializeField] private Animator anim;
     [SerializeField] private NavMeshAgent agent;
+    [SerializeField] private CapsuleCollider2D col;
 
     [SerializeField] private LayerMask playerLayer;
     [SerializeField] private LayerMask towerLayer;
     [SerializeField] private LayerMask obstacleLayer;
+
+    [SerializeField] private LayerMask ignoreLayer_NotSteal;
+    [SerializeField] private LayerMask ignoreLayer_Stealing;
 
     [Header("GameObjects")]
     [SerializeField] private GameObject player;
     [SerializeField] private GameObject artifact;
     [SerializeField] private GameObject target;
     [SerializeField] private GameObject bulletPrefab;
+    [SerializeField] private GameObject bloodSplashEffect;
+    [SerializeField] public Transform spawnTransform;
 
     [Header("Variables")]
     [SerializeField] private float moveSpeed;
@@ -34,11 +40,6 @@ public class EnemySoldier : EnemyEntity
     [SerializeField] private float nextPlayerChaseCancel;
     [SerializeField] private float nextplayerChaseCooldown;
     [SerializeField] private float chasePlayerDuration;
-
-    [SerializeField] private float avoidDistance = 0.5f;
-
-    [SerializeField] private bool isDetectedTarget;
-    [SerializeField] private bool isFollowingTarget;
 
     protected override void Awake()
     {
@@ -52,6 +53,9 @@ public class EnemySoldier : EnemyEntity
     {
         agent.updateUpAxis = false; // For 2D pathfinding
         agent.updateRotation = false; // For 2D rotation handling
+        agent.speed = 2f;
+
+        col.excludeLayers = ignoreLayer_NotSteal;
         base.Start();
     }
 
@@ -73,8 +77,9 @@ public class EnemySoldier : EnemyEntity
         {
             case EnemyState.Idle:
                 DetectTower();
+                DetectPlayer();
 
-                if(target == null)
+                if (target == null)
                 {
                     currentState = EnemyState.Run;
                 }
@@ -82,33 +87,66 @@ public class EnemySoldier : EnemyEntity
 
             case EnemyState.Run:
 
-                if(target != null)
+                float distanceToArtifact = Vector2.Distance(transform.position, artifact.transform.position);
+
+                if (!GameManager.instance.IsArtifactBeingStole())
                 {
-                    float distanceToTarget = Vector2.Distance(transform.position, target.transform.position);
-                    if (distanceToTarget > detectRange)
+                    if (distanceToArtifact < 0.07f)
                     {
-                        target = null;
-                        currentState = EnemyState.Idle;
-                        return;
+                        GameManager.instance.SetArtifactStoleStatus(true);
+                        artifact.transform.position = transform.position;
+                        agent.SetDestination(spawnTransform.position);
+                        agent.speed = 0.5f;
+                    }
+
+                    if (target != null)
+                    {
+                        float distanceToTarget = Vector2.Distance(transform.position, target.transform.position);
+                        if (distanceToTarget > detectRange)
+                        {
+                            target = null;
+                            currentState = EnemyState.Idle;
+                            return;
+                        }
+                        else
+                        {
+                            //transform.position = Vector2.MoveTowards(transform.position, target.transform.position, moveSpeed);
+                            agent.SetDestination(target.transform.position);
+
+                            if (distanceToTarget <= attackRange)
+                            {
+                                currentState = EnemyState.Attack;
+                            }
+                        }
                     }
                     else
                     {
-                        //transform.position = Vector2.MoveTowards(transform.position, target.transform.position, moveSpeed);
-                        agent.SetDestination(target.transform.position);
-
-                        if (distanceToTarget <= attackRange)
-                        {
-                           currentState = EnemyState.Attack;
-                        }
+                        //transform.position = Vector2.MoveTowards(transform.position, artifact.transform.position, moveSpeed);
+                        //agent.isStopped = false;
+                        DetectTower();
+                        DetectPlayer();
+                        agent.SetDestination(artifact.transform.position);
                     }
                 }
                 else
                 {
-                    //transform.position = Vector2.MoveTowards(transform.position, artifact.transform.position, moveSpeed);
-                    //agent.isStopped = false;
-                    DetectTower();
-                    agent.SetDestination(artifact.transform.position);
+                    if (distanceToArtifact < 0.07f)
+                    {
+                        GameManager.instance.SetArtifactStoleStatus(true);
+                        artifact.transform.position = transform.position;
+                        agent.SetDestination(spawnTransform.position);
+                        agent.speed = 0.5f;
+                        
+                        col.excludeLayers = ignoreLayer_Stealing;
+                    }
+                    else
+                    {
+                        DetectTower();
+                        DetectPlayer();
+                        agent.SetDestination(player.transform.position);
+                    }
                 }
+                
 
                 break;
 
@@ -144,8 +182,24 @@ public class EnemySoldier : EnemyEntity
 
     private void Facing()
     {
+        if(target != null)
+        {
+            Vector2 lookDirection = (Vector2)target.transform.position - new Vector2(transform.position.x, transform.position.y);
+            float angle = Mathf.Atan2(lookDirection.y, lookDirection.x) * Mathf.Rad2Deg;
 
+            if ((angle > -90) && (angle < 90))
+            {
+                gameObject.transform.localScale = new Vector3(1, 1, 1);
+                slider.transform.localScale = new Vector3(1f, 1f, 1f);
+            }
+            else
+            {
+                gameObject.transform.localScale = new Vector3(-1, 1, 1);
+                slider.transform.localScale = new Vector3(-1f, 1f, 1f);
+            }
+        }
     }
+
 
     private void RangeAttack()
     {
@@ -195,23 +249,36 @@ public class EnemySoldier : EnemyEntity
 
     private void DetectPlayer()
     {
-        Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, detectRange, towerLayer);
-
-        float closestDistance = Mathf.Infinity;
-        GameObject closestEnemy = null;
-
-        foreach (Collider2D targetCol in hitEnemies)
+        if(Time.time > nextPlayerChaseCancel)
         {
-            float distanceToEnemy = Vector2.Distance(transform.position, targetCol.transform.position);
-            if (distanceToEnemy < detectRange)
+            nextPlayerChaseCancel = Time.time + nextplayerChaseCooldown;
+            Invoke("ResetPlayerChase", chasePlayerDuration);
+
+            Collider2D[] hitEnemies = Physics2D.OverlapCircleAll(transform.position, detectRange, playerLayer);
+
+            float closestDistance = Mathf.Infinity;
+            GameObject closestEnemy = null;
+
+            foreach (Collider2D targetCol in hitEnemies)
             {
-                closestDistance = distanceToEnemy;
-                closestEnemy = targetCol.gameObject;
-                currentState = EnemyState.Run;
-                target = closestEnemy;
+                float distanceToEnemy = Vector2.Distance(transform.position, targetCol.transform.position);
+                if (distanceToEnemy < detectRange)
+                {
+                    closestDistance = distanceToEnemy;
+                    closestEnemy = targetCol.gameObject;
+                    currentState = EnemyState.Run;
+                    target = closestEnemy;
+                }
             }
         }
+        
 
+    }
+
+    private void ResetPlayerChase()
+    {
+        if(target == player)
+        target = null;
     }
 
     private void ChooseAnimation()
@@ -240,7 +307,12 @@ public class EnemySoldier : EnemyEntity
 
     protected override void Die()
     {
+        float distanceToArtifact = Vector2.Distance(transform.position, artifact.transform.position);
 
+        if (distanceToArtifact < 0.03f)
+        {
+            GameManager.instance.SetArtifactStoleStatus(false);
+        }
         /*if (GameData.Instance != null)
         {
             for (int i = 0; i < orbsToSpawn; i++)
@@ -250,12 +322,14 @@ public class EnemySoldier : EnemyEntity
         }
         QuestManager.Instance.TrackKill(enemyType);*/
 
+        PlayerController.instance.coinCount += 10;
         base.Die(); // Call the base Die method to handle other death-related behaviors
     }
 
     public override void TakeDamage(float damageValue)
     {
         StartCoroutine(Tremble());
+        Instantiate(bloodSplashEffect, transform.position, Quaternion.Euler(0f, 0f, 0f));
         SoundManager.instance.PlayEnemySoldierSounds(1, transform.position);
         CharacterHealthComponent.TakeDamage(damageValue);
     }
